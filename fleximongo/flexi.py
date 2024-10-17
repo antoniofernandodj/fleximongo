@@ -122,7 +122,7 @@ class FlexiMongo:
             return (
                 await strategies.Operation(strgy)
                 .set_options(operation_name, body)
-                .excecute_operation()
+                .execute_operation()
             )
 
     def get_collection(self, url, db_name, collection_name):
