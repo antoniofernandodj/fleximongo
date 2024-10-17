@@ -25,7 +25,7 @@ class CreateDocumentStrategy(DatabaseOperationStrategy):
         }
 
 
-class FindDocumentsStrategy(DatabaseOperationStrategy):
+class FindOneDocumentsStrategy(DatabaseOperationStrategy):
     async def executar(self, filters: Dict[str, Any] = {}, limit: int = 100):
 
         for key, value in filters.items():
@@ -39,7 +39,7 @@ class FindDocumentsStrategy(DatabaseOperationStrategy):
         return {"documents": documents}
 
 
-class FindDocumentStrategy(DatabaseOperationStrategy):
+class FindManyDocumentStrategy(DatabaseOperationStrategy):
     async def executar(self, document_id: str):
 
         try:
@@ -98,7 +98,7 @@ class Operation:
         self.strategy = strategy
         self.options: Dict[str, Any] = {}
 
-    async def excecute_operation(self) -> Any:
+    async def execute_operation(self) -> Any:
         print(self.options)
         return await self.strategy.executar(**self.options)
 
@@ -136,9 +136,9 @@ class Operation:
 
 operation_mapping: Mapping[str, Type[DatabaseOperationStrategy]] = {
     "clear-collection": ClearCollectionStrategy,
-    "find-many": FindDocumentsStrategy,
+    "find-many": FindOneDocumentsStrategy,
     "create": CreateDocumentStrategy,
-    "find": FindDocumentStrategy,
+    "find": FindManyDocumentStrategy,
     "delete": DeleteDocumentStrategy,
     "update": UpdateDocumentStrategy,
 }
