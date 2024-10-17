@@ -1,6 +1,8 @@
+from typing import List
 from fastapi import FastAPI, Header, Path
 from motor.motor_asyncio import AsyncIOMotorClient
 from fleximongo import exc_handlers, schemas, strategies
+from fastapi.middleware.cors import CORSMiddleware
 
 
 class FlexiMongo:
@@ -15,7 +17,7 @@ class FlexiMongo:
     - `url`: URL de conexão com o banco de dados MongoDB.
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, cors_origins: List[str] = []) -> None:
         """
         Inicializa a classe FlexiMongo.
 
@@ -23,6 +25,7 @@ class FlexiMongo:
         - `url`: Uma string representando a URL de conexão com o MongoDB.
         """
         self.url = url
+        self.cors_origins = cors_origins
 
     def init_app(self, app: FastAPI):
         """
@@ -35,6 +38,13 @@ class FlexiMongo:
         """
         exc_handlers.register_exception_handlers(app)
         self.register_entrypoint(app=app, url=self.url)
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=self.cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     def register_entrypoint(self, app: FastAPI, url: str):
         """
@@ -48,10 +58,11 @@ class FlexiMongo:
         - `url`: A URL de conexão com o MongoDB.
         """
 
-        @app.post("/op/{operation_name}/")
+        @app.post("/{db_name}/{collection_name}/")
         async def operation(
             body: schemas.OperationSchema,
-            operation_name: str = Path(
+            operation_name: str = Header(
+                ...,
                 title=(
                     "Nome da operação a ser executada no banco: "
                     "`find`, `find-many`, `delete`, `create`, `update`, `clear-collection`"
@@ -67,7 +78,7 @@ class FlexiMongo:
                     "- `clear-collection`: Remove todos os documentos de uma coleção."
                 ),
             ),
-            collection_name: str = Header(
+            collection_name: str = Path(
                 ...,
                 title="Nome da coleção onde as operações serão executadas",
                 description=(
@@ -75,7 +86,7 @@ class FlexiMongo:
                     "A coleção deve existir no banco de dados selecionado."
                 ),
             ),
-            db_name: str = Header(
+            db_name: str = Path(
                 ...,
                 title="Nome do banco de dados onde as operações serão executadas",
                 description=(
@@ -109,7 +120,7 @@ class FlexiMongo:
 
             # Configura a operação e a executa
             return (
-                await strategies.Operation(strgy, url)
+                await strategies.Operation(strgy)
                 .set_options(operation_name, body)
                 .excecute_operation()
             )
