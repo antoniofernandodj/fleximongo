@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, Type
 from bson import ObjectId
 from fleximongo.exceptions import DocumentNotFound, InvalidIDFormat
 import fleximongo.schemas as schemas
@@ -28,8 +28,15 @@ class CreateDocumentStrategy(DatabaseOperationStrategy):
 class FindDocumentsStrategy(DatabaseOperationStrategy):
     async def executar(self, filters: Dict[str, Any] = {}, limit: int = 100):
 
+        for key, value in filters.items():
+            if key == '_id':
+                filters[key] = ObjectId(value)
+
         documents = await self.collection.find(filters).to_list(limit)
-        return {"documents": [str(doc["_id"]) for doc in documents]}
+        for document in documents:
+            document["_id"] = str(document["_id"])
+
+        return {"documents": documents}
 
 
 class FindDocumentStrategy(DatabaseOperationStrategy):
@@ -100,23 +107,23 @@ class Operation:
     ) -> Operation:
 
         if operation_name == "find-many":
-            data = schemas.FindManySchema(payload=body.payload)
+            data = schemas.FindManySchema(payload=body.payload)  # type: ignore
             self.options = {"filters": data.payload}
 
         elif operation_name == "create":
-            data = schemas.CreateSchema(payload=body.payload)
+            data = schemas.CreateSchema(payload=body.payload)  # type: ignore
             self.options = {"payload": data.payload}
 
         elif operation_name == "update":
             data = schemas.UpdateSchema(
-                document_id=body.document_id, payload=body.payload
+                document_id=body.document_id, payload=body.payload  # type: ignore
             )
             self.options = {
                 "document_id": data.document_id,
                 "payload": data.payload,
             }
 
-        elif operation_name == "find-one":
+        elif operation_name == "find":
             data = schemas.FindOneSchema(document_id=body.document_id)
             self.options = {"document_id": data.document_id}
 
@@ -127,11 +134,11 @@ class Operation:
         return self
 
 
-operation_mapping: Mapping[str, DatabaseOperationStrategy] = {
+operation_mapping: Mapping[str, Type[DatabaseOperationStrategy]] = {
     "clear-collection": ClearCollectionStrategy,
     "find-many": FindDocumentsStrategy,
     "create": CreateDocumentStrategy,
-    "find-one": FindDocumentStrategy,
+    "find": FindDocumentStrategy,
     "delete": DeleteDocumentStrategy,
     "update": UpdateDocumentStrategy,
 }
