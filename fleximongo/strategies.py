@@ -1,5 +1,4 @@
 from __future__ import annotations
-from tkinter import N
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Mapping, Optional, Type, Union
 from bson import ObjectId
@@ -45,10 +44,7 @@ class CreateDocumentStrategy(DatabaseOperationStrategy):
         limit: Optional[int] = None,
         pipeline: Pipeline = None
     ):
-        if document_id is None:
-            raise ValueError("document_id is required")
-        if filters is None:
-            filters = {}
+
         if not isinstance(payload, dict):
             raise ValueError("payload dict is required")
 

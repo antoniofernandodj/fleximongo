@@ -8,8 +8,6 @@ def register_strategy(
     ):
 
     def decorator(StrategyClass: type):
-
         mapping[strategy_name] = StrategyClass
-        print(mapping)
 
     return decorator
