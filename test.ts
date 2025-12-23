@@ -1,42 +1,42 @@
 import { FlexiMongoSDK } from "./fleximongo-sdk.ts";
 
-const mongo = new FlexiMongoSDK({
-  baseURL: "http://localhost:8010",
-  dbName: "my-app",
-});
+const sdk = new FlexiMongoSDK("http://localhost:7000");
 
-async function main() {
+async function main2() {
+  const myDatabase = sdk.db("myDatabase");
+  const usersCollection = myDatabase.collection("users");
+  const notesCollection = myDatabase.collection("notes");
   try {
-    const createUserResponse = await mongo.create("users", {
-      name: "Alice",
-      email: "alice@example.com",
+    const createUserResponse = await usersCollection.create({
+      name: "Bob",
+      email: "bob@example.com",
       active: true,
     });
 
-    const createNoteResponse1 = await mongo.create("notes", {
+    await notesCollection.create({
       title: "My First Note",
       content: "Hello, world!",
       userId: createUserResponse.id,
     });
 
-    const createNoteResponse2 = await mongo.create("notes", {
+    await notesCollection.create({
       title: "My Second Note",
       content: "Hello, again!",
       userId: createUserResponse.id,
     });
 
-    const user = await mongo.find("users", createUserResponse.id);
-    user.notes = await mongo.findMany("notes", {
+    const user = await usersCollection.find(createUserResponse.id);
+    user.notes = await notesCollection.findMany({
       userId: createUserResponse.id,
     });
 
     console.log({ user });
 
-    await mongo.clearCollection("users");
-    await mongo.clearCollection("notes");
+    await usersCollection.clearCollection();
+    await notesCollection.clearCollection();
   } catch (error) {
     console.error(error.response.data);
   }
 }
 
-main();
+main2();
